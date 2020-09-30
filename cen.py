@@ -1,4 +1,3 @@
-import getpass
 import os
 import sys
 
@@ -7,7 +6,9 @@ import config
 from git import RemoteProgress
 
 import pomparse
-from argparse import Args
+import util
+
+import cache
 
 ps = os.path.sep
 
@@ -19,29 +20,56 @@ class CloneProgress(RemoteProgress):
 
 
 def init():
-    args = Args()
-    args.inject('clone', clone_all, n_params=1)
-    args.inject('versions', get_all_versions)
-    return args
+    cache.cen_root_dir = util.get_cen_root()
+    cache.dotcen_path = cache.cen_root_dir + ps + '.cen'
+    cache.args.inject('clone', clone_all, n_params=1)
+    cache.args.inject('versions', get_all_versions)
+    cache.args.inject('version', get_version)
+    cache.args.inject('whereami', print_location)
+    cache.args.inject('info', print_info)
+
+    cache.scm_path = util.read_dotcen('scm')
+    cache.config_path = util.read_dotcen('config')
+    cache.infra_path = util.read_dotcen('infra')
+
+    return cache
+
+
+def print_info():
+    print('cen project root:', cache.cen_root_dir, '\n')
+    print('             scm:', cache.scm_path)
+    print('          config:', cache.config_path)
+    print('           infra:', cache.infra_path, '\n')
+    print('    currently in:', util.where_am_i(), '\n')
+
+def print_location():
+    print(util.where_am_i())
+
+
+def get_version():
+    pass
 
 
 def get_all_versions():
-    scm_path = config.read_dotcen('scm')
-    config_path = config.read_dotcen('config')
-    infra_path = config.read_dotcen('infra')
+    get_scm_version()
+    get_config_version()
 
-    scm_pom = scm_path + ps + 'pom.xml'
-    print('[scm   ] ' + config.last_path_elem(scm_path) + ':' + pomparse.get_version(scm_pom))
 
-    with open(config_path + ps + 'appconf' + ps + 'dc.ini') as confdcini:
+def get_scm_version():
+    scm_pom = cache.scm_path + ps + 'pom.xml'
+    print('[scm   ] ' + util.last_path_elem(cache.scm_path) + ':' + pomparse.get_version(scm_pom))
+
+
+def get_config_version():
+    with open(cache.config_path + ps + 'appconf' + ps + 'dc.ini') as confdcini:
         for l in confdcini.readlines():
             if l.lstrip().startswith(config.PROPERTIES['conf.dcini.version.prefix']):
-                print('[config] ' + config.last_path_elem(config_path) + l[l.index(':'):])
+                print('[config] ' + util.last_path_elem(cache.config_path) + l[l.index(':'):])
 
 
 def clone_all(module_name_arr):
     module_name = module_name_arr[0]
-    short_module_name = config.short_mod_name(module_name)
+    short_module_name = util.short_mod_name(module_name)
     config_dir_name = config.PROPERTIES['config.dir.name']
     print('Cloning MODULE ', short_module_name, 'to', os.getcwd())
     dest_path = os.getcwd()
@@ -60,9 +88,9 @@ def clone_all(module_name_arr):
     scm_dest_path = dest_path + ps + short_module_name
     clone_repo(scm_repo_base + module_name + '.git', scm_dest_path, config.PROPERTIES['scm.branch.name'])
 
-    config.write_to_dotcen('scm', scm_dest_path)
-    config.write_to_dotcen('config', config_dest_path)
-    config.write_to_dotcen('infra', infra_dest_path)
+    util.write_to_dotcen('scm', scm_dest_path)
+    util.write_to_dotcen('config', config_dest_path)
+    util.write_to_dotcen('infra', infra_dest_path)
 
 
 def clone_repo(repo_url, dest_path, branch):
@@ -80,5 +108,5 @@ def authenticate():
 
 
 if __name__ == '__main__':
-    args = init()
-    args.parse(sys.argv[1:])
+    cache = init()
+    cache.args.parse(sys.argv[1:])
