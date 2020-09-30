@@ -2,7 +2,7 @@ from collections import defaultdict
 
 
 class Args:
-    COMMANDS = ['help', 'clone:1']
+    COMMANDS = ['help']
 
     def __init__(self):
         self.command = ''
@@ -56,15 +56,12 @@ class Args:
 
     def inject(self, name, func, *args, **kwargs):
         num_args = kwargs.get('n_params', 0)
-        self.COMMANDS.append(name + '' if num_args == 0 else ':' + str(num_args))
+        self.COMMANDS.append(name + ('' if num_args == 0 else ':' + str(num_args)))
         self.injected_functions[name] = func
         self.define_commands()
 
     def help(self):
         print('HELP')
-
-    def clone(self, params):
-        print('Cloning', params[0])
 
 
 if __name__ == '__main__':
