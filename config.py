@@ -5,6 +5,12 @@ PROPERTIES = {'config.dir.name': 'config', 'config.branch.name': 'erste_d10', 's
               'conf.dcini.version.prefix': 'export DC_ARTIFACT_FULLNAME='}
 
 
+def get(key):
+    if key in PROPERTIES:
+        return PROPERTIES[key]
+    else:
+        return None
+
 def get_auth_config_repo_base(usr, pwd):
     return CONFIG_REPO_BASE_URL.replace('{username}', usr).replace('{password}', pwd)
 

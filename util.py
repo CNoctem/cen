@@ -1,5 +1,5 @@
 import os
-from pathlib import Path
+import sys
 
 import cache
 import config
@@ -57,13 +57,48 @@ def write_to_dotcen(key, val):
 def where_am_i():
     if cache.scm_path in os.getcwd():
         return 'scm'
-    elif cache.config_path in os.getcwd():
-        return 'config'
     elif cache.infra_path in os.getcwd():
         return 'infra'
+    elif cache.config_path in os.getcwd():
+        return 'config'
     elif cache.cen_root_dir == os.getcwd():
         return 'cen root'
     elif cache.cen_root_dir + os.path.sep + config.PROPERTIES['config.dir.name'] == os.getcwd():
         return 'config root'
     else:
         return 'I have no idea where you might be.'
+
+
+def yes_no(*args, **kwargs):
+    message = kwargs.get('message', '')
+    yn = input(message + ' [Yes/no]:')
+    return len(yn) == 0 or yn.lower() in ['y', 'yes']
+
+
+def yes_no_quit(*args, **kwargs):
+    ok = yes_no(args, kwargs)
+    if not ok:
+        sys.exit(0)
+    else:
+        return ok
+
+
+def change_config_version(ver):
+    dcini = cache.config_path + os.path.sep + 'appconf' + os.path.sep + 'dc.ini'
+    lines = []
+    with open(dcini) as dc:
+        for l in dc.readlines():
+            if config.get('conf.dcini.version.prefix') in l:
+                if ':' not in l:
+                    print('Syntax error in dc.ini')
+                    sys.exit(-1)
+                i = l.index(':')
+                newline = l[0:i] + ':' + ver[0]
+                lines.append(newline)
+            else:
+                lines.append(l)
+
+    with open(dcini, 'w') as dc:
+        for l in lines:
+            dc.write(l)
+            dc.write('\n')
